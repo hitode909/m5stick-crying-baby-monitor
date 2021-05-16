@@ -11,7 +11,7 @@
 uint8_t BUFFER[READ_LEN] = {0};
 
 #define SAMPLE_PER_SECOND 1
-#define SAMPLING_SECOND 60*60
+#define SAMPLING_SECOND 60*60*12
 #define SAMPLES_MAX SAMPLING_SECOND * SAMPLE_PER_SECOND
 const int samplesMax = SAMPLES_MAX;
 
@@ -81,7 +81,7 @@ void setup() {
 }
 
 // variables for visualize
-float maxHistory[SAMPLES_MAX] = {0.0};
+unsigned short maxHistory[SAMPLES_MAX] = {0};
 float plotValues[DISPLAY_WIDTH] = {0.0};
 float annotations[DISPLAY_WIDTH] = {0.0};
 uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
@@ -99,15 +99,24 @@ void analyze() {
     sum += absValue/WAVE_LEN;
   }
   if (frameCount != frameCountPrev) {
-    // max: about 790000
+    Serial.println(maxHistory[frameCountPrev % samplesMax]);
     maxHistory[frameCount % samplesMax] = 0;
     frameCountPrev = frameCount;
   }
-  
-  maxHistory[frameCount % samplesMax] += sum;
+  unsigned int prev = maxHistory[frameCount % samplesMax];
+
+  // XXX: scale down to avoid overflow
+  maxHistory[frameCount % samplesMax] += (int)(sum/100);
+  if (prev > maxHistory[frameCount % samplesMax]) {
+    Serial.print("overflow ");
+    Serial.print(prev);
+    Serial.print(" -> ");
+    Serial.println(maxHistory[frameCount % samplesMax]);
+    
+  }
 }
 
-float maxAt(int i) {
+unsigned short maxAt(int i) {
   // while (i > SAMPLES_MAX) i-= SAMPLES_MAX;
   return maxHistory[i % samplesMax];
 
