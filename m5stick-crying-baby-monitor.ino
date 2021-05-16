@@ -10,8 +10,8 @@
 #define READ_LEN (2 * WAVE_LEN)
 uint8_t BUFFER[READ_LEN] = {0};
 
-#define SAMPLE_PER_SECOND 10
-#define SAMPLING_SECOND 60*30
+#define SAMPLE_PER_SECOND 5
+#define SAMPLING_SECOND 60*60
 #define SAMPLES_MAX SAMPLING_SECOND * SAMPLE_PER_SECOND
 const int samplesMax = SAMPLES_MAX;
 
@@ -65,7 +65,7 @@ void mic_record_task (void* arg)
 void setup() {
   M5.begin();
   M5.Lcd.setRotation(3);
-  M5.Axp.ScreenBreath(9); // 7 ~ 15
+  M5.Axp.ScreenBreath(8); // 7 ~ 15
   M5.Lcd.fillScreen(WHITE);
   M5.Lcd.setTextColor(BLACK, WHITE);
   M5.Lcd.setTextSize(1);
@@ -136,9 +136,12 @@ void showSignal() {
     int minTo = floor((frameCount - indexTo) / (60 * SAMPLE_PER_SECOND));
     bool minChanged = minFrom != minTo;
     if (minChanged) {
-      if (minFrom % 5 == 0) {
+      if (minFrom % 10 == 0) {
         annotations[(int)n] = HEADER_HEIGHT;
         annotationColors[(int)n] = BLACK;
+      } else if (minFrom % 5 == 0) {
+        annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
+        annotationColors[(int)n] = DARKGREY;
       } else {
         annotations[(int)n] = floor(HEADER_HEIGHT * 0.5);
         annotationColors[(int)n] = DARKGREY;
