@@ -85,7 +85,8 @@ unsigned short maxHistory[SAMPLES_MAX] = {0};
 float plotValues[DISPLAY_WIDTH] = {0.0};
 float annotations[DISPLAY_WIDTH] = {0.0};
 uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
-int frameCount = 0; // count up to infinity
+// TODO: change to zero-base
+int frameCount = 0 + SAMPLES_MAX; // count up to infinity
 
 int frameCountPrev = 0;
 void analyze() {
@@ -192,8 +193,7 @@ void showSignal() {
 }
 
 void updateClock() {
-  // frameCount++;
-  frameCount =  millis() / (1000 / SAMPLE_PER_SECOND);
+  frameCount =  millis() / (1000 / SAMPLE_PER_SECOND) + SAMPLES_MAX;
 }
 
 void sleepForStep() {
