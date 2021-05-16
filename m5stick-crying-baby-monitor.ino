@@ -137,10 +137,18 @@ float maxInRange(int from, int to) {
 float factor = 1.0;
 
 void showSignal() {
+  if (frameCount % 2) {
+    showSignalInner(60*60*12, 180, 60);
+  } else {
+    showSignalInner(60*15, 5, 1);
+  }
+}
+
+void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsigned int annotateShort) {
   img.fillSprite(TFT_WHITE);
 
-  int sampleAvailableFrom = max(frameCount - SAMPLES_MAX, 0);
-  int availableSamplesCount = min(frameCount, SAMPLES_MAX);
+  int availableSamplesCount = targetSeconds * SAMPLE_PER_SECOND;
+  int sampleAvailableFrom = max(frameCount - availableSamplesCount, 0);
   for (double n = 0; n < DISPLAY_WIDTH; n++) {
     int indexFrom = sampleAvailableFrom + floor(availableSamplesCount * (n / (DISPLAY_WIDTH)));
     int indexTo = sampleAvailableFrom + floor(availableSamplesCount * ((n + 1) / (DISPLAY_WIDTH)));
@@ -154,10 +162,10 @@ void showSignal() {
     int minTo = floor((frameCount - indexTo) / (60 * SAMPLE_PER_SECOND));
     bool minChanged = minFrom != minTo;
     if (minChanged) {
-      if (minFrom / 180 != minTo / 180) {
+      if (minFrom / annotateLong != minTo / annotateLong) {
         annotations[(int)n] = HEADER_HEIGHT;
         annotationColors[(int)n] = BLACK;
-      } else if (minFrom / 60 != minTo / 60) {
+      } else if (minFrom / annotateShort != minTo / annotateShort) {
          annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
         annotationColors[(int)n] = DARKGREY;
       } else {
