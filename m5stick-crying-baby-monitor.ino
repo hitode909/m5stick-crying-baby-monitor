@@ -10,7 +10,7 @@
 #define READ_LEN (2 * WAVE_LEN)
 uint8_t BUFFER[READ_LEN] = {0};
 
-#define SAMPLE_PER_SECOND 5
+#define SAMPLE_PER_SECOND 1
 #define SAMPLING_SECOND 60*60
 #define SAMPLES_MAX SAMPLING_SECOND * SAMPLE_PER_SECOND
 const int samplesMax = SAMPLES_MAX;
@@ -58,7 +58,7 @@ void mic_record_task (void* arg)
     analyze();
     showSignal();
     updateClock();
-    sleepForStep();
+    // sleepForStep();
   }
 }
 
@@ -87,15 +87,24 @@ float annotations[DISPLAY_WIDTH] = {0.0};
 uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
 int frameCount = 0; // count up to infinity
 
+int frameCountPrev = 0;
 void analyze() {
   float min = INT16_MAX;
   float max = 0.0;
+  float sum = 0.0;
   for (int n = 0; n < WAVE_LEN; n++) {
     float absValue = abs(adcBuffer[n]);
     if (absValue < min) min = absValue;
     if (absValue > max) max = absValue;
+    sum += absValue/WAVE_LEN;
   }
-  maxHistory[frameCount % samplesMax] = max;
+  if (frameCount != frameCountPrev) {
+    // max: about 790000
+    maxHistory[frameCount % samplesMax] = 0;
+    frameCountPrev = frameCount;
+  }
+  
+  maxHistory[frameCount % samplesMax] += sum;
 }
 
 float maxAt(int i) {
@@ -173,7 +182,8 @@ void showSignal() {
 }
 
 void updateClock() {
-  frameCount++;
+  // frameCount++;
+  frameCount =  millis() / (1000/SAMPLE_PER_SECOND);
 }
 
 void sleepForStep() {
