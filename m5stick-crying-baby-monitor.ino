@@ -99,7 +99,6 @@ void analyze() {
     sum += absValue/WAVE_LEN;
   }
   if (frameCount != frameCountPrev) {
-    Serial.println(maxHistory[frameCountPrev % samplesMax]);
     maxHistory[frameCount % samplesMax] = 0;
     frameCountPrev = frameCount;
   }
@@ -154,15 +153,17 @@ void showSignal() {
     int minTo = floor((frameCount - indexTo) / (60 * SAMPLE_PER_SECOND));
     bool minChanged = minFrom != minTo;
     if (minChanged) {
-      if (minFrom % 10 == 0) {
+      if (minFrom / 180 != minTo / 180) {
         annotations[(int)n] = HEADER_HEIGHT;
         annotationColors[(int)n] = BLACK;
-      } else if (minFrom % 5 == 0) {
-        annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
+      } else if (minFrom / 60 != minTo / 60) {
+         annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
         annotationColors[(int)n] = DARKGREY;
       } else {
-        annotations[(int)n] = floor(HEADER_HEIGHT * 0.5);
-        annotationColors[(int)n] = DARKGREY;
+        annotations[(int)n] = 0;
+        annotationColors[(int)n] = WHITE;
+        // annotations[(int)n] = floor(HEADER_HEIGHT * 0.5);
+        // annotationColors[(int)n] = DARKGREY;
       }
     } else {
       annotations[(int)n] = 0;
@@ -192,7 +193,7 @@ void showSignal() {
 
 void updateClock() {
   // frameCount++;
-  frameCount =  millis() / (1000/SAMPLE_PER_SECOND);
+  frameCount =  millis() / (1000 / SAMPLE_PER_SECOND);
 }
 
 void sleepForStep() {
