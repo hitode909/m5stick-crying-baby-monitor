@@ -89,16 +89,18 @@ uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
 int frameCount = 0 + SAMPLES_MAX; // count up to infinity
 
 int frameCountPrev = 0;
+float inputVolume = 0.0;
 void analyze() {
-  float min = INT16_MAX;
-  float max = 0.0;
   float sum = 0.0;
   for (int n = 0; n < WAVE_LEN; n++) {
     float absValue = abs(adcBuffer[n]);
-    if (absValue < min) min = absValue;
-    if (absValue > max) max = absValue;
-    sum += absValue/WAVE_LEN;
+    sum += absValue / WAVE_LEN;
   }
+
+  // to ignore noise on initialize
+  inputVolume = min(inputVolume + 0.01, 1.0);
+
+  sum *= inputVolume;
   if (frameCount != frameCountPrev) {
     maxHistory[frameCount % samplesMax] = 0;
     frameCountPrev = frameCount;
@@ -106,13 +108,13 @@ void analyze() {
   unsigned int prev = maxHistory[frameCount % samplesMax];
 
   // XXX: scale down to avoid overflow
-  maxHistory[frameCount % samplesMax] += (int)(sum/100);
+  maxHistory[frameCount % samplesMax] += (int)(sum / 100);
   if (prev > maxHistory[frameCount % samplesMax]) {
     Serial.print("overflow ");
     Serial.print(prev);
     Serial.print(" -> ");
     Serial.println(maxHistory[frameCount % samplesMax]);
-    
+
   }
 }
 
@@ -136,12 +138,24 @@ float maxInRange(int from, int to) {
 
 float factor = 1.0;
 
+float seconds = 60;
+#define SCALES_LENGTH 4
+unsigned int scales[SCALES_LENGTH][3] = {
+  {60 * 6, 5, 1},
+  {60 * 30, 5, 1},
+  {60 * 60 * 3, 60, 5},
+  {60 * 60 * 12, 60, 15},
+};
+int scaleIndex = 0;
+
 void showSignal() {
-  if (frameCount % 2) {
-    showSignalInner(60*60*12, 180, 60);
-  } else {
-    showSignalInner(60*15, 5, 1);
-  }
+  scaleIndex = (frameCount / 10) % SCALES_LENGTH;
+  seconds = ceil(seconds * 0.95 + (float)scales[scaleIndex][0] * 0.05);
+  showSignalInner(seconds, scales[scaleIndex][1], scales[scaleIndex][2]);
+  M5.Lcd.setCursor(0, 0);
+  // M5.Lcd.printf("%d    ", (int)seconds);
+  // Serial.println(scaleIndex);
+  // Serial.println((int)seconds);
 }
 
 void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsigned int annotateShort) {
@@ -166,7 +180,7 @@ void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsi
         annotations[(int)n] = HEADER_HEIGHT;
         annotationColors[(int)n] = BLACK;
       } else if (minFrom / annotateShort != minTo / annotateShort) {
-         annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
+        annotations[(int)n] = floor(HEADER_HEIGHT * 0.8);
         annotationColors[(int)n] = DARKGREY;
       } else {
         annotations[(int)n] = 0;
@@ -181,7 +195,8 @@ void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsi
   }
 
   float valueMax = 0.0;
-  for (int n = DISPLAY_WIDTH * 0.5; n < DISPLAY_WIDTH; n++) {
+  // to use recent values, loop from n = DISPLAY_WIDTH * 0.5
+  for (int n = 0; n < DISPLAY_WIDTH; n++) {
     valueMax = max(valueMax, plotValues[n]);
   }
 
@@ -195,6 +210,16 @@ void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsi
     // annotation
     img.drawFastVLine(n, 0, annotations[n], annotationColors[n]);
     img.drawFastVLine(n, DISPLAY_HEIGHT - annotations[n], annotations[n], annotationColors[n]);
+  }
+
+  img.setTextFont(2); // 1:8px 2:16px 4:26px
+  img.setTextColor(BLACK);
+  img.setTextDatum(4);
+  img.setCursor(10, (80 - 16) / 2);
+  if (seconds >= 3600) {
+    img.printf("%.0fhr", round(seconds / 3600));
+  } else {
+    img.printf("%.0fmin", round(seconds / 60));
   }
 
   img.pushSprite(0, 0);
