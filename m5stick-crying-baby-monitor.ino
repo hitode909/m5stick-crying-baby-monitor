@@ -62,6 +62,14 @@ void mic_record_task (void* arg)
   }
 }
 
+// variables for visualize
+unsigned short maxHistory[SAMPLES_MAX] = {0};
+float plotValues[DISPLAY_WIDTH] = {0.0};
+float annotations[DISPLAY_WIDTH] = {0.0};
+uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
+// TODO: change to zero-base
+int frameCount = 0 + SAMPLES_MAX; // count up to infinity
+
 void setup() {
   M5.begin();
   M5.Lcd.setRotation(3);
@@ -78,15 +86,11 @@ void setup() {
 
   i2sInit();
   xTaskCreate(mic_record_task, "mic_record_task", 2048, NULL, 1, NULL);
-}
 
-// variables for visualize
-unsigned short maxHistory[SAMPLES_MAX] = {0};
-float plotValues[DISPLAY_WIDTH] = {0.0};
-float annotations[DISPLAY_WIDTH] = {0.0};
-uint16_t annotationColors[DISPLAY_WIDTH] = {WHITE};
-// TODO: change to zero-base
-int frameCount = 0 + SAMPLES_MAX; // count up to infinity
+  // for(int i = 0; i < SAMPLES_MAX; i++) {
+  //  maxHistory[i] = i % 100;
+  // }
+}
 
 int frameCountPrev = 0;
 float inputVolume = 0.0;
@@ -98,7 +102,7 @@ void analyze() {
   }
 
   // to ignore noise on initialize
-  inputVolume = min(inputVolume + 0.01, 1.0);
+  inputVolume = min(inputVolume + 0.001, 1.0);
 
   sum *= inputVolume;
   if (frameCount != frameCountPrev) {
@@ -212,10 +216,9 @@ void showSignalInner(unsigned int targetSeconds, unsigned int annotateLong, unsi
     img.drawFastVLine(n, DISPLAY_HEIGHT - annotations[n], annotations[n], annotationColors[n]);
   }
 
-  img.setTextFont(2); // 1:8px 2:16px 4:26px
+  img.setTextFont(4); // 1:8px 2:16px 4:26px
   img.setTextColor(BLACK);
-  img.setTextDatum(4);
-  img.setCursor(10, (80 - 16) / 2);
+  img.setCursor(5, (80 - 26) / 2);
   if (seconds >= 3600) {
     img.printf("%.0fhr", round(seconds / 3600));
   } else {
